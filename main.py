@@ -1,5 +1,3 @@
-import sys
-
 from aiogram import Dispatcher, Bot
 from aiogram.types import BotCommand
 from dotenv import load_dotenv
@@ -8,6 +6,8 @@ import os
 import logging
 from handlers import *
 from utils.models import Users, Task
+from utils.notify import notify_users
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 load_dotenv()
 bot = Bot(token=os.getenv('BOT_TOKEN'))
@@ -20,9 +20,13 @@ async def main():
     for i in tables:
         if not i.table_exists():
             i.create_table()
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(notify_users, 'cron', hour=12, kwargs={'bot': bot})
+    scheduler.start()
+
     print('started')
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-    # logging.basicConfig(filename='logs.log', level=logging.INFO)
+    logging.basicConfig(filename='logs.log', level=logging.INFO)
     await bot.set_my_commands([BotCommand(command='start', description='Главное меню')])
     await dp.start_polling(bot)
 
